@@ -1,0 +1,248 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+The original dataset contains 1000 entries with 20 categorial/symbolic attributes prepared by Prof. Hofmann. In this dataset, each entry represents a person who takes a credit by a bank. Each person is classified as good or bad credit risks according to the set of attributes. The link to the original dataset can be found below.
+
+It is almost impossible to understand the original dataset due to its complicated system of categories and symbols. Thus, I wrote a small Python script to convert it into a readable CSV file. Several columns are simply ignored, because in my opinion either they are not important or their descriptions are obscure. The selected attributes are:
+
+Age (numeric)
+Sex (text: male, female)
+Job (numeric: 0 - unskilled and non-resident, 1 - unskilled and resident, 2 - skilled, 3 - highly skilled)
+Housing (text: own, rent, or free)
+Saving accounts (text - little, moderate, quite rich, rich)
+Checking account (numeric, in DM - Deutsch Mark)
+Credit amount (numeric, in DM)
+Duration (numeric, in month)
+Purpose (text: car, furniture/equipment, radio/TV, domestic appliances, repairs, education, business, vacation/others)
+
+```{r}
+setwd("/Users/pierrot/Documents/german-credit-risk")
+```
+
+
+```{r}
+#rm(list = ls())
+
+data <- read.csv("german_credit_data.csv", sep=",",dec=".", h=T)
+options(digits=2)
+```
+
+```{r}
+data$Purpose_ <- "autre"
+data$Purpose_[data$Purpose == "car"] <- "car"
+data$Purpose_[data$Purpose == "furniture/equipment"] <- "furniture/equipment"
+data$Purpose_[data$Purpose == "radio/TV"] <- "radio/TV"
+```
+
+```{r}
+
+data$Job_<-ifelse(data$Job < 2, c("NoSkill"), c("Skill"))
+```
+
+```{r}
+
+data$Housing_<-ifelse(data$Housing == "own", c("own"), c("NoOwn"))
+```
+
+```{r}
+
+data$sex_num<-ifelse(data$Sex == "male", 1, 0)
+data$job_num<-ifelse(data$Job_ == "Skill", 1, 0)
+data$housing_num<-ifelse(data$Housing_ == "own", 1, 0)
+```
+
+PErmet de voir les premières lignes
+```{r}
+head(data)
+```
+
+Permet de voir le type des variables 
+```{r}
+str(data)
+```
+
+Permet d'avoir une vu d'ensemble
+```{r}
+summary(data)
+```
+`
+
+Permet de voir les dernières lignes
+```{r}
+tail(data)
+```
+Proportion des variables catégorielles 
+```{r}
+prop.table(table(data$Job))
+prop.table(table(data$Housing))
+prop.table(table(data$Saving.accounts))
+prop.table(table(data$Checking.account))
+prop.table(table(data$Purpose))
+prop.table(table(data$Sex))
+```
+
+Vérifier sil y a des valeurs vides
+```{r}
+length(which(is.na(data$Age)))
+length(which(is.na(data$Sex)))
+length(which(is.na(data$Job)))
+
+length(which(is.na(data$Housing)))
+length(which(is.na(data$Checking.account)))
+length(which(is.na(data$Saving.accounts)))
+
+length(which(is.na(data$Credit.amount)))
+length(which(is.na(data$Duration)))
+length(which(is.na(data$Purpose)))
+
+```
+Remplacer par la variables la plus frequentes
+```{r}
+data$Checking.account[is.na(data$Checking.account) == TRUE] <- 'little'
+data$Saving.accounts[is.na(data$Saving.accounts) == TRUE] <- "quite rich"
+```
+
+```{r}
+table(data$Sex,data$Job_)
+```
+```{r}
+table(data$Sex,data$Housing)
+```
+```{r}
+aggregate(data[, c(2,8:9)], list(data$Sex), mean)
+```
+```{r}
+aggregate(data[, c(2,8:9)], list(data$Purpose_), mean)
+```
+```{r}
+table(data$Sex,data$Purpose_)
+```
+
+```{r}
+table(data$Job,data$Purpose)
+tbl_purp_job <- table(data$Job,data$Purpose)
+```
+
+```{r}
+df_tbl_purp_job <- as.data.frame(tbl_purp_job)
+```
+
+
+```{r}
+table(data$Job)
+```
+
+Les personnes moins diplomés empruntent moins et sur une durée plus courte
+```{r}
+aggregate(data[, c(2,8:9)], list(data$Job_), mean)
+```
+
+
+
+```{r}
+table(data$Purpose_)
+```
+
+
+```{r}
+table(data$Job_)
+```
+
+
+```{r}
+table(data$Job_,data$Purpose_)
+```
+
+```{r}
+table(data$Sex,data$Housing)
+```
+
+```{r}
+table(data$Purpose_,data$Housing_)
+```
+
+
+```{r}
+install.packages("dplyr")
+```
+
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+```{r}
+install.packages("factoextra")
+install.packages("NbClust")
+```
+
+
+```{r}
+data_num <- data %>% 
+  dplyr::select(Age, sex_num, job_num, housing_num, Credit.amount:Duration)
+```
+
+```{r}
+data_num_sc <- scale(data_num)
+```
+
+```{r}
+str(data_num_sc)
+```
+```{r}
+km.out = kmeans(data_num_sc,centers=4,nstart =20)
+```
+
+```{r}
+km.out$cluster
+```
+```{r}
+km.out$tot.withins
+```
+
+```{r}
+library(factoextra)
+library(NbClust)
+```
+```{r}
+
+# Elbow method
+fviz_nbclust(data_num_sc, kmeans, method = "wss") +
+    geom_vline(xintercept = 4, linetype = 2)+
+  labs(subtitle = "Elbow method")
+```
+
+```{r}
+# Silhouette method
+fviz_nbclust(data_num_sc, kmeans, method = "silhouette")+
+labs(subtitle = "Silhouette method")
+```
+```{r}
+# nboot = 50 to keep the function speedy.
+# recommended value: nboot= 500 for your analysis.
+# Use verbose = FALSE to hide computing progression.
+set.seed(123)
+fviz_nbclust(data_num_sc, kmeans, nstart = 25, method = "gap_stat", nboot = 50)+
+labs(subtitle = "Gap statistic method")
+```
+
+```{r}
+km.out2=kmeans(data_num_sc,centers=2,nstart =20)
+pairs(data_num_sc, col=c(1:2)[km.out2$cluster])
+```
+```{r}
+library(factoextra)
+fviz_cluster(km.out2, data_num_sc, ellipse.type = "norm")
+```
+
+dashboard
+encourt total
+encourt moyen
+purpose/encourt/duration
+duration moyenne
+
+segmentation
+clustering
