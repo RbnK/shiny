@@ -1,0 +1,154 @@
+---
+title: "Dashboard"
+output:
+  flexdashboard::flex_dashboard:
+    theme: spacelab
+    orientation: rows
+  html_document:
+    df_print: paged
+    vertical_layout: fill
+  storyboard: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+
+library(knitr)
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(DT)
+library(shiny)
+```
+
+Sidebar {.sidebar}
+=====================================
+
+
+```{r}
+sliderInput("start_slider", 
+            label = "Select trip start times to display (hour of day):",
+            min = 0, 
+            max = 6, 
+            value = 1, 
+            step = 0.5)
+
+helpText("Note: Ce Dashaboard est un test", 
+                    "l'objectif est d'utiliser le moins de package possible",
+                    "les widgets ne sont pas actifs")
+
+
+```
+
+
+Overview {data-icon="fa-list"}
+=====================================
+
+
+Rows
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+
+valueBox(200,
+    caption = "Carat moyen",
+    icon = "fa-comments",
+    href ='#data')
+```
+
+### Chart C
+
+```{r}
+
+valueBox(50,
+    caption = "Prix moyen",
+    icon = "fa fa-angle-up",
+    color = "navy")
+```
+
+### Proportion haut de gamme
+```{r}
+
+gauge(value = 70,
+      min = 0,
+      max = 100)
+```
+
+
+
+Détails {data-icon="fa-comment"}
+=====================================
+
+
+Rows
+-----------------------------------------------------------------------
+
+### valueBox
+
+```{r}
+
+
+valueBox(500,
+    caption = "Carat moyen",
+    icon = "fa-clock-o",
+    color = "purple",
+    href ='#data')
+```
+
+### valueBox
+
+```{r}
+
+valueBox(50,
+    caption = "Prix moyen",
+    icon = "fa fa-angle-up",
+    color = "green")
+```
+
+
+### valueBox
+
+```{r}
+
+valueBox(90,
+    caption = "Chiffre d'affaire",
+    icon = "fa fa-angle-up",
+    color = "green")
+```
+
+
+Rows
+-----------------------------------------------------------------------
+
+
+### gauge
+```{r}
+
+gauge(value = 50,
+      min = 0,
+      max = 100,
+      symbol = '%')
+```
+
+### gauge
+```{r}
+
+gauge(value = 70,
+      min = 0,
+      max = 100,
+      symbol = '%')
+```
+
+### gauge
+```{r}
+
+gauge(value = 30,
+      min = 0,
+      max = 100,
+      symbol = '%')
+```
+
