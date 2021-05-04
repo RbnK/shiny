@@ -1,0 +1,198 @@
+---
+title: "Bikeshare"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+  html_document:
+    df_print: paged
+    vertical_layout: fill
+  storyboard: true
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(readr)
+library(lubridate)
+library(ggplot2)
+library(tidyverse)
+library(plotly)
+library(knitr)
+library(DT)
+library(shiny)
+```
+
+Sidebar {.sidebar}
+=====================================
+
+
+```{r}
+sliderInput("start_slider", 
+            label = "Select trip start times to display (hour of day):",
+            min = 0, 
+            max = 6, 
+            value = 1, 
+            step = 0.5)
+
+show_diamonds_df <- reactive({
+
+diamonds %>%
+  filter(carat <= input$start_slider)
+
+})
+```
+
+
+Overview
+=====================================
+
+Column
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+cutgg <- diamonds %>% 
+  ggplot(aes(x = cut)) +
+  theme_bw() +
+  geom_bar(binwidth = 1) +
+  ylab('# Count')
+
+ggplotly(cutgg) 
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+mean_carat <- mean(diamonds$carat) %>% round(digits = 1)
+
+valueBox(mean_carat,
+    caption = "Carat moyen",
+    icon = "fa-clock-o",
+    href ='#data')
+```
+
+### Chart C
+
+```{r}
+
+mean_price <- mean(diamonds$price) %>% round(digits = 1)
+
+valueBox(mean_price,
+    caption = "Prix moyen",
+    icon = "fa-clock-o")
+```
+
+### Chart prix élevé
+```{r}
+num_cars <- nrow(diamonds)
+short_cars <- sum(diamonds$price > 10000) # under 10 min
+pct_short_cars <- round(100 * short_cars / num_cars, 0)
+
+gauge(value = pct_short_cars,
+      min = 0,
+      max = 100)
+```
+
+
+
+Details
+=====================================
+
+
+
+Column {data-width=450}
+-----------------------------------------------------------------------
+
+### Origins
+
+
+```{r}
+mean_price <- diamonds %>% 
+      group_by(cut) %>%
+      summarize(
+        nb_sighted = n(),
+        avg_price = mean(price),
+        median_price = median(price),
+        min_price = min(price),
+        max_price = max(price)
+      )
+
+datatable(
+  mean_price, rownames = FALSE,
+  extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+  )
+)
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Total Trips
+
+```{r}
+renderPlot({
+#cutgg <-
+  show_diamonds_df() %>% 
+  ggplot(aes(x = cut)) +
+  theme_bw() +
+  geom_bar(binwidth = 1) +
+  ylab('# Count')
+
+#ggplotly(cutgg) 
+})
+```
+
+### Trips by Duration
+
+```{r}
+claritygg <- diamonds %>% 
+  ggplot(aes(carat, price, color = cut)) +
+  theme_bw() +
+  geom_point() +
+  coord_cartesian() +
+  ylab('# Price')
+
+ggplotly(claritygg) 
+```
+
+Data {.storyboard}
+=====================================
+
+### Chart spead
+
+
+```{r }
+carsgg <- diamonds %>% 
+  ggplot(aes(x = carat)) +
+  theme_bw() +
+  geom_histogram() +
+  ylab('# Trips')
+
+ggplotly(carsgg) 
+```
+
+> Plot de la distribution `r mean(cars$speed, na.rm = FALSE)`
+
+### Chart dist
+
+```{r }
+carsgg <- diamonds %>% 
+  ggplot(aes(x = depth)) +
+  theme_bw() +
+  geom_histogram() +
+  ylab('# Trips')
+
+ggplotly(carsgg) 
+```
+
+***
+
+* commentaire  :  vitesse moyenne : `r mean(cars$speed, na.rm = FALSE)`
+* commentaire  :  dist moyenne : `r mean(cars$dist, na.rm = FALSE)`
